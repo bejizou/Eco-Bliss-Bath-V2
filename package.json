@@ -1,0 +1,13 @@
+{
+  "devDependencies": {
+    "@angular-devkit/build-angular": "^21.0.4",
+    "@angular/cli": "^21.0.4",
+    "@angular/common": "^21.0.6",
+    "@angular/core": "^21.0.6",
+    "@angular/platform-browser-dynamic": "^21.0.6",
+    "cypress": "^15.8.1"
+  },
+  "dependencies": {
+    "@faker-js/faker": "^10.2.0"
+  }
+}
