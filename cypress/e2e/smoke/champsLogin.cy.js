@@ -14,3 +14,31 @@ describe("UI – Champs de connexion", () => {
   });
 
 });
+describe("UI – Bouton Connexion sur la page d’accueil", () => {
+
+  it('Le bouton "Connexion" doit être visible sur la page d’accueil', () => {
+    // Accès à la page d’accueil
+    cy.visit("http://localhost:4200/#/");
+
+    // Vérification de la présence du bouton Connexion
+    cy.get('[data-cy="nav-link-login"]').should("be.visible");
+  });
+
+
+it("Test 3 : Login message, merci de remplir correctement tous les champs", () => {
+  cy.visit("http://localhost:4200/#/");
+
+  cy.get('[data-cy="nav-link-login"]').click();
+
+  cy.get('[data-cy="login-submit"]').click();
+
+  cy.get('[data-cy="login-errors"]')
+    .should("be.visible")
+    .and("contain", "Merci de remplir correctement tous les champs");
+});
+
+
+
+
+});
+

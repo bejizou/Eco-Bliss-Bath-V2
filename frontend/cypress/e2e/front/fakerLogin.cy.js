@@ -35,66 +35,46 @@ describe("UI – Authentification", () => {
   });
 
 
-
-it("Test 4 : Login sans last Name (Nom)", () => {
-  // Étapes :
-  // 1. Visiter la page d'inscription
-  cy.visit("http://localhost:4200/#/register");
-
-  // 2. Saisir un nom aléatoire (Prénom) généré par Faker
-  const firstName = faker.person.firstName();
-  cy.get('[data-cy="register-input-firstname"]').type(firstName);
-
-  // 3. Saisir un e-mail aléatoire généré par Faker
-  cy.get('[data-cy="register-input-email"]').type(faker.internet.email());
-
-  // 4. Saisir un mot de passe aléatoire généré par Faker (et confirmation)
-  const password = faker.internet.password();
-  cy.get('[data-cy="register-input-password"]').type(password);
-  cy.get('[data-cy="register-input-password-confirm"]').type(password);
-
-  // 5. Cliquer sur le bouton d'inscription (sans avoir rempli le champ "Nom")
-  cy.get('[data-cy="register-submit"]').click();
-
-  // Attendu :
-  // Le message « Merci de remplir correctement tous les champs » doit être visible
-  cy.get('.alert-danger')
-    .should("be.visible")
-    .and("contain", "Merci de remplir correctement tous les champs");
-});
-
-
-
 describe("UI – Validation Inscription (Champ manquant)", () => {
 
-  it("Test 5 : Login sans first Name (Prénom)", () => {
-    // Étapes :
-    // 1. Visiter la page d'inscription
+  it("Test : inscription sans Prénom", () => {
     cy.visit("http://localhost:4200/#/register");
 
-    // 2. Saisir un NOM aléatoire généré par Faker dans le champ « Nom »
-    // Note : On remplit le nom mais on laisse le prénom vide
+    // Remplir uniquement le nom, email et mot de passe
     cy.get('[data-cy="register-input-lastname"]').type(faker.person.lastName());
-
-    // 3. Saisir une e-mail aléatoire généré par Faker dans le champ « E-mail »
     cy.get('[data-cy="register-input-email"]').type(faker.internet.email());
-
-    // 4. Saisir un mot de passe aléatoire généré par Faker
     const password = faker.internet.password();
     cy.get('[data-cy="register-input-password"]').type(password);
     cy.get('[data-cy="register-input-password-confirm"]').type(password);
 
-    // 5. Cliquer sur le bouton d'inscription (sans avoir rempli le champ « Prénom »)
+    // Cliquer sur le bouton S'inscrire
     cy.get('[data-cy="register-submit"]').click();
 
-    // Attendu : 
-    // Le test réussit si le message « Merci de remplir correctement tous les champs » est visible
-    cy.get('.alert-danger') // Sélecteur d'alerte standard
+    // Vérification : le message d'erreur apparaît
+    cy.get('[data-cy="register-errors"]')
+      .should("be.visible")
+      .and("contain", "Merci de remplir correctement tous les champs");
+  });
+
+  it("Test : inscription sans Nom", () => {
+    cy.visit("http://localhost:4200/#/register");
+
+    // Remplir uniquement le prénom, email et mot de passe
+    cy.get('[data-cy="register-input-firstname"]').type(faker.person.firstName());
+    cy.get('[data-cy="register-input-email"]').type(faker.internet.email());
+    const password = faker.internet.password();
+    cy.get('[data-cy="register-input-password"]').type(password);
+    cy.get('[data-cy="register-input-password-confirm"]').type(password);
+
+    cy.get('[data-cy="register-submit"]').click();
+
+    cy.get('[data-cy="register-errors"]')
       .should("be.visible")
       .and("contain", "Merci de remplir correctement tous les champs");
   });
 
 });
+
 
 
 });

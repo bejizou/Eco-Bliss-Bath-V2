@@ -44,7 +44,7 @@ Cypress.Commands.add(
 
 // Stocke le token d'authentification
 Cypress.Commands.add("storeAuthToken", () => {
-  cy.loginByAPI().then((response) => {
+  return cy.loginByAPI().then((response) => {
     expect(response.status).to.eq(200);
     Cypress.env("authToken", response.body.token);
   });
@@ -55,6 +55,7 @@ Cypress.Commands.add("addToCartAPI", (token, productId, quantity = 1) => {
   return cy.request({
     method: "PUT",
     url: "http://localhost:8081/orders/add",
+    failOnStatusCode: false,
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -110,6 +111,17 @@ Cypress.Commands.add("getAvailableProduct", () => {
 /**
  * Réinitialise complètement le panier via l'API
  */
+// Récupère le panier avec authentification
+Cypress.Commands.add("removeFromCartAPI", (token, id) => {
+  return cy.request({
+    method: "DELETE",
+    url: `http://localhost:8081/orders/${id}/delete`, 
+    failOnStatusCode: false, // On gère les erreurs manuellement
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+});
 Cypress.Commands.add("resetCart", () => {
   cy.storeAuthToken();
 
@@ -133,22 +145,5 @@ Cypress.Commands.add("resetCart", () => {
 
       cy.log("Panier réinitialisé");
     });
-  });
-});
-
-
-/**
- * Supprime une ligne du panier via l'API
- * @param {string} token - Token d'authentification
- * @param {number} orderLineId - ID de la ligne panier
- */
-Cypress.Commands.add("removeFromCartAPI", (token, orderLineId) => {
-  return cy.request({
-    method: "DELETE",
-    url: `http://localhost:8081/orders/${orderLineId}`,
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    failOnStatusCode: false,
   });
 });

@@ -1,62 +1,67 @@
 /**
- * Extrait un nombre entier depuis un texte (ex: "Stock : 12 unités")
- * @param {string} text - Texte contenant un nombre
- * @returns {number} - Nombre extrait ou 0 si aucun nombre trouvé
+ * Extrait la valeur numérique du stock à partir d’un texte affiché dans l’UI
+ * Exemple :
+ *  - "Stock disponible : 12"  → 12
+ *  - "Stock : -5"             → -5
+ *
+ * @param {string} text - Texte contenant la valeur du stock
+ * @returns {number} - Valeur numérique du stock (0 si aucune valeur trouvée)
  */
 function extractStock(text) {
-  // Recherche le premier nombre (positif ou négatif) dans le texte
-  const match = text.match(/-?\d+/);
-
-  // Si un nombre est trouvé, on le convertit en entier, sinon on retourne 0
+  const match = text.match(/-?\d+/); // Capture le premier nombre (positif ou négatif)
   return match ? parseInt(match[0], 10) : 0;
 }
 
-// Groupe de tests Cypress : Automatisation du panier
-describe("Automatisation Panier ", () => {
-  // Hook exécuté une seule fois avant tous les tests
+describe("Automatisation Panier", () => {
+
+  /**
+   * Connexion avant l’exécution de tous les tests
+   * Permet d’accéder aux fonctionnalités panier
+   */
   before(() => {
-    // Connexion de l'utilisateur (commande Cypress personnalisée)
     cy.login();
-    
   });
 
-  // Test principal : scénario complet du panier
   it("Test complet panier", () => {
-    // Récupération d’un produit disponible via l’API
+
+    /**
+     * Récupération dynamique d’un produit disponible via l’API
+     * → garantit un test stable et reproductible
+     */
+    cy.resetCart();
     cy.getAvailableProduct().then((product) => {
-      // Extraction des informations produit
       const productId = product.id;
       const productName = product.name;
       const initialStockAPI = product.availableStock;
 
-      // Log des informations produit
       cy.log(`Produit: ${productName} (Stock API initial: ${initialStockAPI})`);
 
-      // Navigation vers la page du produit
+      /**
+       * Accès à la page détail du produit
+       */
       cy.visitProduct(productId);
 
-      // Attente pour s'assurer du chargement complet
+      // Attente du chargement complet (UI + données)
       cy.wait(1000);
       cy.reload();
       cy.wait(1000);
 
-      // Récupération du stock affiché avant ajout au panier
+      /**
+       * Lecture du stock affiché AVANT ajout au panier
+       */
       cy.get('[data-cy="detail-product-stock"]')
-        .should("be.visible") // Vérifie que le stock est affiché
-        .invoke("text") // Récupère le texte du champ stock
+        .should("be.visible")
+        .invoke("text")
         .then((stockTextAvant) => {
-          // Extraction du stock depuis le texte
           const stockAvant = extractStock(stockTextAvant);
 
-          // Logs de comparaison stock UI / API
           cy.log(`Stock AVANT ajout (page): ${stockAvant}`);
           cy.log(`Stock AVANT ajout (API): ${initialStockAPI}`);
 
           /**
-           * Stock de référence :
-           * - Si le stock UI est à 0 mais que l’API indique un stock > 0,
-           *   on utilise le stock API
-           * - Sinon, on utilise le stock affiché
+           * Définition du stock de référence :
+           * - priorité au stock affiché dans l’UI
+           * - fallback sur l’API si l’UI affiche 0
            */
           const stockReference =
             stockAvant === 0 && initialStockAPI > 0
@@ -66,13 +71,12 @@ describe("Automatisation Panier ", () => {
           cy.log(`Stock de réf utilisé: ${stockReference}`);
           cy.log("Champ de disponibilité présent");
 
-          // ===== TEST : QUANTITÉ NORMALE (>1) =====
+          /**
+           * TEST D’UNE QUANTITÉ NORMALE
+           */
           cy.log("\nTest ajout quantité normale (3)...");
-
-          // Saisie de la quantité 3
           cy.get('[data-cy="detail-product-quantity"]').clear().type("3");
 
-          // Vérification de la valeur saisie
           cy.get('[data-cy="detail-product-quantity"]').then(($input) => {
             const val = $input.val();
             cy.log(`Quantité normale saisie: "${val}"`);
@@ -81,42 +85,42 @@ describe("Automatisation Panier ", () => {
 
           cy.log("Quantité normale acceptée");
 
-          // ===== TESTS DES LIMITES =====
-          cy.log("\n Tests des limites...");
+          /**
+           * TESTS DES LIMITES DE SAISIE
+           */
+          cy.log("\nTests des limites...");
 
-          // Test valeur négative
+          // Test d’une quantité négative
           cy.get('[data-cy="detail-product-quantity"]').clear().type("-5");
           cy.get('[data-cy="detail-product-quantity"]').then(($input) => {
             const val = $input.val();
             cy.log(`Après chiffre négatif (-5): "${val}"`);
 
-            // Information si le champ accepte les valeurs négatives
+            // Log informatif si le champ accepte une valeur invalide
             if (val === "-5") {
               cy.log("Champ accepte valeurs négatives");
             }
           });
 
-          // Test valeur supérieure à 20
+          // Test d’une quantité supérieure à la limite attendue
           cy.get('[data-cy="detail-product-quantity"]').clear().type("25");
           cy.get('[data-cy="detail-product-quantity"]').then(($input) => {
             const val = $input.val();
             cy.log(`Après chiffre >20 (25): "${val}"`);
 
-            // Information si le champ accepte des valeurs > 20
             if (val === "25") {
               cy.log("Champ accepte valeurs > 20");
             }
           });
 
-          cy.log("Tests limites");
+          cy.log("Tests limites terminés");
 
-          // ===== TEST : QUANTITÉ LIMITE MAX (20) =====
+          /**
+           * TEST QUANTITÉ LIMITE AUTORISÉE
+           */
           cy.log("\nTest quantité limite haute valide (20)...");
-
-          // Saisie de la valeur limite
           cy.get('[data-cy="detail-product-quantity"]').clear().type("20");
 
-          // Vérification de la valeur
           cy.get('[data-cy="detail-product-quantity"]').then(($input) => {
             const val = $input.val();
             cy.log(`Quantité limite haute: "${val}"`);
@@ -125,29 +129,31 @@ describe("Automatisation Panier ", () => {
 
           cy.log("Quantité limite (20) acceptée");
 
-          // ===== AJOUT AU PANIER =====
+          /**
+           * AJOUT AU PANIER
+           */
           cy.log("\nAjout au panier avec quantité 3...");
-
-          // Saisie de la quantité finale
           cy.get('[data-cy="detail-product-quantity"]').clear().type("3");
-
-          // Clic sur le bouton "Ajouter au panier"
           cy.get('[data-cy="detail-product-add"]').click();
 
           // Vérification de la redirection vers le panier
           cy.url().should("include", "/cart");
           cy.log("Redirection vers panier OK");
 
-          // Vérification présence d'au moins une ligne produit
-          cy.get('[data-cy="cart-line"]').should("have.length.greaterThan", 0);
+          /**
+           * Vérification du contenu du panier (UI)
+           */
+          cy.get('[data-cy="cart-line"]').should(
+            "have.length.greaterThan",
+            0
+          );
 
-          // Vérification du nom du produit dans le panier
           cy.get('[data-cy="cart-line-name"]').should(
             "contain",
             productName
           );
 
-          // ===== VÉRIFICATION QUANTITÉ DANS LE PANIER =====
+          // Vérification de la quantité dans le panier
           cy.get('[data-cy="cart-line-quantity"]')
             .should("be.visible")
             .then(($input) => {
@@ -158,30 +164,26 @@ describe("Automatisation Panier ", () => {
 
           cy.log("Produit ajouté (3) !");
 
-          // ===== VÉRIFICATION VIA API =====
+          /**
+           * VÉRIFICATION VIA API
+           */
           cy.log("\nVérification API...");
-
-          // Stockage du token d’authentification
           cy.storeAuthToken();
 
           cy.then(() => {
             const authToken = Cypress.env("authToken");
 
-            // Récupération du panier via API
             cy.getCartAPI(authToken).then((cartResponse) => {
               const orderLines = cartResponse.body.orderLines;
-
-              // Vérification qu'il y a au moins une ligne
               expect(orderLines).to.have.length.greaterThan(0);
 
-              // Recherche du produit ajouté
               const addedProduct = orderLines.find(
                 (line) => line.product.id === productId
               );
 
               expect(addedProduct).to.exist;
 
-              // Vérification de la quantité via API
+              // Vérification de la quantité côté API
               const quantiteAPI = addedProduct.quantity;
               cy.log(`Quantité via API: ${quantiteAPI}`);
               expect(quantiteAPI).to.equal(3);
@@ -190,17 +192,16 @@ describe("Automatisation Panier ", () => {
             });
           });
 
-          // ===== VÉRIFICATION DU STOCK APRÈS AJOUT =====
+          /**
+           * VÉRIFICATION DU STOCK APRÈS AJOUT
+           */
           cy.log("\nVérification stock (diminution de 3)...");
-
-          // Retour sur la page produit
           cy.visitProduct(productId);
 
           cy.wait(2000);
           cy.reload();
           cy.wait(1000);
 
-          // Récupération du stock après ajout
           cy.get('[data-cy="detail-product-stock"]')
             .should("be.visible")
             .invoke("text")
@@ -212,31 +213,7 @@ describe("Automatisation Panier ", () => {
               cy.log(`Stock APRÈS ajout: ${stockApres}`);
               cy.log(`Stock attendu (ref - 3): ${stockAttendu}`);
 
-              // Validation souple selon les sources (UI / API)
-              if (stockApres === stockAttendu) {
-                cy.log(`Stock diminué de 3: ${stockReference} → ${stockApres}`);
-              } else if (
-                stockApres === stockReference - 3 ||
-                (stockReference === initialStockAPI &&
-                  stockApres === initialStockAPI - 3)
-              ) {
-                cy.log(`Stock diminué de 3: ${stockReference} → ${stockApres}`);
-              } else if (stockApres < stockReference) {
-                const diminution = stockReference - stockApres;
-                cy.log(
-                  `Stock a diminué: ${stockReference} → ${stockApres} (diminution de ${diminution})`
-                );
-              } else {
-                if (stockApres === initialStockAPI - 3) {
-                  cy.log(
-                    `Stock diminué par rapport à l'API: ${initialStockAPI} → ${stockApres}`
-                  );
-                } else {
-                  cy.log(
-                    `Stock : référence=${stockReference}, après=${stockApres}, API=${initialStockAPI}`
-                  );
-                }
-              }
+        
             });
         });
     });
